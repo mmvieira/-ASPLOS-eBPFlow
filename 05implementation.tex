@@ -123,6 +123,7 @@ These units are implemented with logic gates to minimize latency.
 Thus, we designed an eBPF processor with a pipeline of 5 stages.
 
 \subsection{Data memory (Optimized FIFO for Zero Copy)}
+\label{secsec:zerocopy}
 
 %\red{The eBPF processor uses the queue (Figure~\ref{fig:06_fig01}) as data memory and does not need to copy the packet to another memory. The processor does not have to wait for all words of the packet to be queued before processing begins. The queue has capacity of 2 MB (64 depth x 256 width) and can be stored up 32 packets of 64 bytes. In the queue there is a field called valid bit that receives $0$ if the word has not arrived and $ 1$ if the word is in the queue.
 

@@ -3,33 +3,52 @@
 
 %serverless
 
-Serverless computing is a new paradigm that allows microservices.
-It enables short lived computation without having to worry about setting up servers, so the term \textit{serverless computing}.
-
-Many companies today support data center infrastructure with serverless computing capabilities, such as Amazon AWS Lambda~\cite{AWSLambda2017},IBM Apache OpenWhisk~\cite{ApacheOpenWhisk}, Microsoft Azure Functions~\cite{AzureFunctions}, Google CloudFunctions~\cite{GoogleCloudFunctions}, and even academia with open source OpenLambda~\cite{OpenLambda2016}.
+Serverless computing is a new paradigm that makes microservices development easy and enables cloud platforms to achieve fine-grained resource allocation.
+It short, it enables brief bursts of computation without specification or configuration of server resources.
+%having to worry about setting up servers, so the term \textit{serverless computing}.
+Many cloud providers support data center infrastructure with serverless computing capabilities, such as Amazon AWS Lambda~\cite{AWSLambda2017}, IBM Apache OpenWhisk~\cite{ApacheOpenWhisk}, Microsoft Azure Functions~\cite{AzureFunctions}, Google Cloud Functions~\cite{GoogleCloudFunctions}, and other providers using the open source system OpenLambda~\cite{OpenLambda2016}.
 
 %Offload
 
-Offloading computation to network elements brings many advantages since it requires fewer servers and enables more applications per server. A study~\cite{powersmartnics} showed that by offloading computation to network elements, it can reduces CAPEX and OPEX costs. For 2,200 network functions per site, it claims to save (\$12 M). It also minimize carbon footprint and improve energy-efficient.
-
-Microsoft cloud Azure provides SmartNICs based on FPGAs~\cite{AzureFPGA2018}.
-
-\marcos{Contributions}
-In this paper, we present eBPFlow, a serverless network packet processing system. It offloads serverless computation to the NetFPGA.
+Offloading computation to network elements brings many advantages since it requires fewer servers and enables more applications per server. A recent study~\cite{powersmartnics} showed that by offloading computation to network elements, operators can reduce CAPEX and OPEX costs. For 2,200 network functions per site, it is possible to save (\$12 M). It also decreases a site's carbon footprint via improved energy-efficiency.
 
 
+%Contributions
+In this paper, we present eBPFlow, a serverless network packet processing system. It offloads serverless computation to a NetFPGA, which is an FPGA board for network packet processing.
+% For instance, Microsoft cloud Azure provides SmartNICs based on FPGAs~\cite{AzureFPGA2018}.
 %Challenges
 In designing eBPFlow, we faced many challenges.
 We need to support reprogrammability on the fly and zero downtime to support scheduling requests.
-NetFPGA, although energy efficient, imposes limitation on computation resources. The maximum clock rate is 200~MHz and the design should take the longest computational path into account since that determines the clock rate. 
-Moreover, to operate at line rate, the design needs to be optimized and zero copy is a requirement.
-Furthermore, as stated in~\cite{bifulco2018survey}, another challenge is to find an expressive yet simple model to handle state operations in the data plane.
+NetFPGA, although energy efficient, imposes limitations on computation resources. The maximum clock rate is 200~MHz and the design must take the longest computational path into account since that determines the clock rate. 
+NetFPGA's synthesizer also imposes some design constraints. 
+Moreover, to operate at line rate, the design needs to be optimized and zero copy packet processing is a requirement.
+Furthermore, as noted in~\cite{bifulco2018survey}, another challenge is to find an expressive yet simple model to handle state operations in the data plane.
 
-~\cite{Levai2018}
-"The 5G core will depend on programmable switches, which allow packet processing functionality to be reconfigured on the fly in order to deploy virtualized network functions and service chains instantaneously."
+% ~\cite{Levai2018}
+% "The 5G core will depend on programmable switches, which allow packet processing functionality to be reconfigured on the fly in order to deploy virtualized network functions and service chains instantaneously."
+
+\textbf{Contributions.} To solve these challenges, eBPFlow is built around a virtual engine.
+It borrows the well-defined Instruction Set Architecture (ISA) of eBPF (extended Berkeley Packet Filter), which follows a RISC model and is already available in the Linux kernel and well-known in the computer networking community, providing compatibility with existing network projects.
+Moreover, to improve performance, we are the first to present a 5-stage pipelined eBPF processor.
+Futhermore, to operate with zero downtime, eBPFlow utilizes a double buffer system.
+We design an abstract data type DM\_FIFO that is simultaneously a Data Memory and FIFO to support zero copy. 
+To handle state operations in the data plane with an expressive but yet simple model, eBPFlow utilizes key-store data storage called maps that are decoupled from the data memory and can be accessed through function calls in a well-defined API.
+To support multi-tenancy, we developed a scheduler in the backend to move code in and out of the NetFPGA.
 
 
 %energy
+%related work
+There has been little prior work leveraging hardware acceleration for serverless execution.
+The only related work, to our knowledge, is E3~\cite{liu2019e3}, which provides a microservice execution platform based on a SmartNIC to improve energy-efficiency. We are the first to propose a network packet processing system for serveless computing using a NetFPGA. eBPFlow consumes only $0.55$~W/Gbps while an 1U x86 server~\cite{x86serverIBM} with 4x 40~Gbps interfaces consumes on average $1.875$~W/Gbps, 3x more. 
+%In Section~\ref{sec:results}, we show that SmartNICs are less energy efficient than eBPFlow.
 
-E3~\cite{liu2019e3} provides a microservice execution platform based on SmartNIc to improve energy-efficient. We are the first to propose a network packet processing system for serveless computing using NetFPGA. eBPFlow consumes only $5.5$~W per interface. In Section~\ref{sec:results}, we show that SmartNICs is less energy efficient than eBPFlow.
+
+
+%roadmap
+
+This paper is organized as follows. In \textsection\ref{sec:architecture}, we present the overall architecture of eBPFlow. In \textsection\ref{sec:design}, we provide the eBPFlow packet processor. In \textsection\ref{sec:implementation}, we describe the implementation details of eBPFlow built on top of the NetFPGA SUME platform. In \textsection\ref{sec:results}, we show the evaluation and results in a realistic environment. 
+%In \textsection\ref{sec:discussion}, we provide some analysis and discuss some limitations.
+In \textsection\ref{sec:relatedWork}, we describe and compare the related work. Finally, in \textsection\ref{sec:conclusion}, we present the conclusions.
+
+% \red{SHOULD I Add anything else?}
 

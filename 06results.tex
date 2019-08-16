@@ -47,7 +47,10 @@ Here, we present the experimental evaluation of eBPFlow.
 
 % Figure~\ref{fig:07_fig03} presents the topology used to run the experiments, 
 
-The test topology used during tests consisted on one NetFPGA SUME, one server running \textit{pktgen-DPDK}~\cite{Pktgen2016} acting as a traffic generator, and a custom controller used to interact with the eBPFlow processor. The server was equipped with a Netronome Agilio CX SmartNIC with two 10 Gbps interfaces. Each 10 GbE port is connected directly to each of two active NetFPGA ports, sending network traffic at line rate, following the same configuration as~\cite{FlowBlaze2019}. Thus, the NetFPGA can receive and send 10~Gbps simultaneously. Both the traffic generation server and the server holding the NetFPGA were powered by i7-7700 \@ 3.60~GHz processors with 8 cores and 8~GB of RAM.
+In our experimental setup, we have used a NetFPGA SUME, one server running \textit{pktgen-DPDK}~\cite{Pktgen2016} acting as a traffic generator, and a custom controller to interact with the eBPFlow processor. The server is equipped with a Netronome Agilio CX SmartNIC with two 10 Gbps interfaces. Each 10 GbE port is connected directly to each of two active NetFPGA ports, sending network traffic at line rate, following the same configuration as~\cite{FlowBlaze2019}. Thus, the NetFPGA can receive and send 10~Gbps simultaneously.  Both the traffic generation server and the server holding the NetFPGA were powered by i7-7700 \(@\) 3.60~GHz processors with 8 cores and 8~GB of RAM.
+
+
+%The test topology used during tests consisted on one NetFPGA SUME, one server running \textit{pktgen-DPDK}~\cite{Pktgen2016} acting as a traffic generator, and a custom controller used to interact with the eBPFlow processor. The server was equipped with a Netronome Agilio CX SmartNIC with two 10 Gbps interfaces. Each 10 GbE port is connected directly to each of two active NetFPGA ports, sending network traffic at line rate, following the same configuration as~\cite{FlowBlaze2019}. Thus, the NetFPGA can receive and send 10~Gbps simultaneously. Both the traffic generation server and the server holding the NetFPGA were powered by i7-7700 \@ 3.60~GHz processors with 8 cores and 8~GB of RAM.
 
 
 % We developed C language applications. The code is compiled with LLVM 3.9 for the eBPF big endian platform. The LLVM compiler generates an executable in the executable and link format (ELF). The objcopy tool extracts the instruction set from the .text segment of the elf file.
@@ -56,9 +59,10 @@ The test topology used during tests consisted on one NetFPGA SUME, one server ru
 \subsection{Use cases}
 \label{sec:use-cases}
 
-We implemented several network programming code (Table~\ref{tbl:example-sizes}) to stress test the generality of eBPFlow's expressive abstraction as a network packet processing core.
-For each network function (NF), we present the number of eBPF instructions and the number of C code lines. 
-These NFs were chosen because they are used as benchmark evaluation in the network literature~\cite{Panda:2016,Sun:2017:NEN:3098822.3098826}.
+We have implemented a diverse set of network programming code (Table~\ref{tbl:example-sizes}) to stress the generality of eBPFlow's expressive abstraction as a network packet processing core.
+For each network function (NF), we present the number of eBPF instructions and the number of Lines of Code (LoC) in C Language. 
+We chose these NFs because they often appear in the literature~\cite{Panda:2016,Sun:2017:NEN:3098822.3098826} as network evaluation benchmarks.
+
 %The applications are ordered in Table~\ref{tbl:example-sizes} according to the number of instructions}, where. 
 % $LU$ indicates programs compiled with Loop Unrolling (LU) enabled. From Figure~\ref{fig:Language}, the $LU$ enabled programs are classified as eBPF-verifier. These programs require more instructions since the loop has to be unrolled. 
 The description of each NF is as follows:
@@ -86,18 +90,18 @@ NAT                   & 182                      & 229\\ \hline
 \end{tabular}}
 \end{table}
 
-\textbf{Return:} is the simplest application possible. It forwards packets to a fixed port and serves as a performance baseline. 
+\textbf{Return:} is the most straightforward application possible. It forwards packets to a fixed port and serves as a performance baseline. 
 
-\textbf{Wire:} acts as wire connecting adjacent ports in pairs of two. It performs an XOR operation between the input port value and 1, which flips the least significant bit. This value sets the packet's output port.
+\textbf{Wire:} acts as wires connecting adjacent ports in pairs of two. It performs an XOR operation between the input port value and 1, which flips the least significant bit. This value sets the packet's output port.
 
-\textbf{L2 Learning Switch} (\texttt{L2LS}): a functional learning switch capable of forwarding Ethernet frames based on values learned on demand and stored on the CAM.
+\textbf{L2 Learning Switch} (\texttt{L2LS}): a functional learning switch capable of forwarding Ethernet frames based on values learned on-demand and stored on the CAM.
 
 % The advantage of a protocol-independent switch is that it only needs to parse the frame header fields for the protocols defined by the programmer. In this example, the parser only needs to parse Ethernet headers, while a protocol-dependent switch would process other frame or packet header fields. CAM (exact-match) lookup table stores the Ethernet MAC address and the input port. 
 % For each input frame, if the source address is unicast, the code can self-populate the lookup table by updating it. This second advantage can reduce network traffic, latency, and CPU controller overhead. Using the destination MAC, the output port is searched. If there is an entry, then the packet is forwarded otherwise there are two options. It can be flooded or sent to the controller. In this experiment, we opted to flood.
 
-\textbf{IPv4 Router} (\texttt{IP4R}): routes packets using the NetFPGA's TCAM module, effectively speeding up costly longest prefix matching operations. 
+\textbf{IPv4 Router} (\texttt{IP4R}): routes packets using the NetFPGA's TCAM module, effectively speeding up the costly longest prefix matching operations. 
 
-\textbf{DDoS Mitigation:} mitigates DDoS attacks by analyzing and dropping potentially dangerous packets on demand~\cite{Bertin2017}.
+\textbf{DDoS Mitigation:} mitigates DDoS attacks by analyzing and dropping potentially dangerous packets on-demand~\cite{Bertin2017}.
 
 \textbf{Network Address Translation} (\texttt{NAT}): modifies packets and stores flow state. Several CAM entries were used to store flow information to translate inbound and outbound packets.
 
@@ -128,7 +132,7 @@ NAT                   & 182                      & 229\\ \hline
 
 
 
-We evaluated the system capability to modify parsing, matching, and actions at run time with zero downtime using the DBS instruction memory. Figure~\ref{fig:zerodowntime} shows the throughput (in Gbps) before, during, and after loading a new eBPF program. We send a constant rate of 512-byte packets at 10 Gbps and switch the processor's program during runtime. Before the experiment begins, the processor is loaded with the DDoS mitigation program on one of the instruction memories. At $t=5$ s, a different DDoS mitigation program is loaded, representing an update on the mitigation policy. 
+We evaluated the system capability to run new code with zero downtime using the DBS instruction memory. Figure~\ref{fig:zerodowntime} shows the throughput (in Gbps) before, during, and after loading a new eBPF program. We send a constant rate of 512-byte packets at 10 Gbps and switch the processor's program during runtime. Before the experiment begins, we load the processor with the DDoS mitigation program on one of the instruction memories. At $t=5$ s, we load a different DDoS mitigation program, representing an update on the mitigation policy.
 %A special register stores the ID of the current instruction memory in use and, whose value is shown in Figure~\ref{fig:zerodowntime}. After the switch the new program's instructions are successfully stored on the second instruction memory and.
 No packets are dropped in this process, showing zero downtime during loading.
 % To ensure the new was installed at a different instruction memory, a special register was added to store the ID of the current instruction memory in use. Figure~\ref{fig:zerodowntime} demonstrates that the change between eBPF programs no cause packets loss after the installation of another eBPF program.
@@ -136,16 +140,16 @@ No packets are dropped in this process, showing zero downtime during loading.
 
 \subsection{Program scheduling}
 
-In this experiment, we evaluate the functionality of eBPFlow's Serverless Computing platform. Two different allocation requests are sent from the controller to the scheduler running on the server that powers the NetFPGA. Both requests consist of a Return-like program ($P1$ and $P2$) to be run for 5 seconds each. The programs just forward the packet to output ports 0 and 1, respectively. This time, we used an extra Intel X710 NIC to generate and receive traffic from the NetFPGA (total of 4 interfaces), and traffic was generated from port 3, as illustrated by Figure~\ref{fig:request}.
+In this experiment, we evaluate the functionality of eBPFlow's Serverless Computing platform. We send two different allocation requests from the controller to the scheduler running on the server that powers the NetFPGA. Both requests consist of a Return-like program ($P1$ and $P2$) to be run for 5 seconds each. The programs just forward the packet to output ports 0 and 1, respectively. This time, we used an extra Intel X710 NIC to generate and receive traffic from the NetFPGA (total of 4 interfaces), and traffic was generated from port 3, as illustrated by Figure~\ref{fig:request}.
  
-\begin{figure}[H]
+\begin{figure}[t]
 \centering
 \includegraphics[width=1.0\columnwidth]{figures/request.pdf}
 \caption{Experiment topology.}
 \label{fig:request}
 \end{figure}
 
-The first program to be scheduled is $P1$, which forwards traffic to output port. At $t=~5$, its scheduled time expires and the scheduler loads $P2$. Due to DBS, the programs are switched only when the new program is fully loaded to the idle instruction memory, and the switch occurs atomically (\S~\ref{sec:downtime}). Figure~\ref{fig:jobsched} shows the throughput received by ports 0 and 1 on the traffic generator, directly connected to the NetFPGA. We modified \textit{pktgen-DPDK}'s source code to reduce the minimum sampling period from $1 s$ to $1 ms$ and collect the amount of packets received by each port every millisecond. The apparent transition of $2$ ms shown in Figure~\ref{fig:jobsched} is caused by low sampling rate. The switch happens at $4.999$ s, but after the sample taken. The next sample will account for the packets sent during that interval, leading to a transition state at $t=5$, in which both ports seem to be receiving packets. Nonetheless, this shows the scheduler is capable of switching programs dynamically on-the-fly according to the requested allocation.
+The first program to be scheduled is $P1$, which forwards traffic to the output port. At $t=~5$, the scheduled time expires, and the scheduler loads $P2$. Due to DBS, the system switches the programs only when the new program finishes loading to the idle instruction memory, and the switch occurs atomically (\S~\ref{sec:downtime}). Figure~\ref{fig:jobsched} shows the throughput received by ports 0 and 1 on the traffic generator, directly connected to the NetFPGA. We modified \textit{pktgen-DPDK}'s source code to reduce the minimum sampling period from $1 s$ to $1 ms$ and collect the number of packets received by each port every millisecond. The reason for the apparent transition of $2$ ms shown in Figure~\ref{fig:jobsched} is a low sampling rate. The switch occurs at $4.999$ s, but after the sample taken. The next sample accounts for the packets sent during that interval, leading to a transition state at $t=5$, in which both ports seem to be receiving packets. Nonetheless, this shows the scheduler is capable of switching programs dynamically on-the-fly according to the requested allocation.
 
 %\begin{figure}[th]
 %\centering
@@ -157,7 +161,7 @@ The first program to be scheduled is $P1$, which forwards traffic to output port
 \subsection{Throughput}
 \label{secsec:throughput}
 
-Figures~\ref{fig:throughput64} and~\ref{fig:throughput128} summarize the measured packet processing rates of minimum- (64 bytes) and 128-sized packets, respectively, for each NF for one interface (as in~\cite{FlowBlaze2019}). The optimized version refers to the DM\_FIFO component that allows zero copy and processing the packet before receiving the entire packet. The optimized versions of Wire and Return programs achieve the highest rate in both cases, which is expected due to their simplicity and low number of instructions. As we increase the packet size, the packet processing overhead decreases, and the throughput increases, which was also expected. The reduced throughput achieved by the other examples is caused by lookups and updates on the TCAM/CAM, which takes several cycles and thus causes. This is even clearer for the NAT example, that beside having much more instructions than the other NFs, also performs several writes to the CAM, each taking 16 cycles each and stalling the processor.
+Figures~\ref{fig:throughput64} and~\ref{fig:throughput128} summarize the measured packet processing rates of minimum- (64 bytes) and 128-sized packets, respectively, for each NF for one interface (as in~\cite{FlowBlaze2019}). The optimized version refers to the DM\_FIFO component (\textsection~\ref{secsec:zerocopy}) that allows zero-copy and processing the packet before receiving the entire packet . The optimized versions of Wire and Return programs achieve the highest rate in both cases, which is expected due to their simplicity and low number of instructions. As we increase the packet size, the packet processing overhead decreases, and the throughput increases, which was also expected. Lookups and updates operations on the TCAM/CAM (several cycles) cause the reduced throughput achieved by the other examples. We can observe better this behavior in the NAT example, that besides having much more instructions than the other NFs, also performs several writes to the CAM, each taking 16 cycles each and stalling the processor.
 
 \begin{figure*}[th]
   \centering
@@ -242,7 +246,7 @@ Figures~\ref{fig:throughput64} and~\ref{fig:throughput128} summarize the measure
 
 In addition to the throughput, we also measured the average and tail latencies for each NF (Figures~\ref{fig:latency} and~\ref{fig:taillatency}) using \textit{pktgen-DPDK}, with 1 $\mu s$ precision.
 % In addition to throughput measurements, \textit{pktgen}'s builtin support for latency measurement was used to evaluate the average latency for each use case, which is shown in Figure~\ref{fig:latency}. All measurements were taken with at a rate of 1 Gbps. 
-As expected, latency increased with the number of instructions (see Table \ref{tbl:example-sizes}), since the processor will take more time to run the entire program. The bars on Figure~\ref{fig:latency} represent the standard deviation, which was close to zero in most cases. This demonstrates that there is little change on the processing time between same-sized packets for a single NF, consequently leading to reduced jitter. Similarly, the tail latency is close to the average value in almost all cases.
+As expected, latency increased with the number of instructions (see Table \ref{tbl:example-sizes}), since the processor takes more time to run the entire program. The bars on Figure~\ref{fig:latency} represent the standard deviation, which was close to zero in most cases. This metric demonstrates that there is little change in the processing time between same-sized packets for a single NF, consequently leading to reduced jitter. Similarly, the tail latency is close to the average value in almost all cases.
 % Measurements for ChaCha8 and Chacha20 were not included due to an incompatibility with \textit{pktgen}. The tool uses the packet's payload to store metadata used to estimate latency. Since these two applications encrypt the payload, \textit{pktgen} was not able to retrieve the metadata at the RX port.
 
 % The latency profile shown by the NAT is due to a combination of queuing, processing delays and accessing CAM. For small packet sizes the NAT's processing delay causes eBPFlow's input queues to grow, since the packet arrival rate is high. As the packet size increases, this rate gets smaller, reducing the queuing effect. However, starting at 1024 B, the effect of moving payload inside the processing pipeline starts to rule the total, and the average latency grows again.
@@ -250,7 +254,7 @@ As expected, latency increased with the number of instructions (see Table \ref{t
 
 \subsection{Program size impact}
 
-To understand the impact of program size on the observed performance, we created $26$ synthetic programs consisting of a varying number of \textit{mov} instructions and a final \textit{exit} instruction. Besides the smallest value (4 instructions), we varied program sizes from $10$ to $250$, increasing $10$ instructions at a time. The traffic generated consisted of 1500-byte packets at 10 Gbps. Figure~\ref{fig:programsize} presents the throughput obtained for each program, considering both eBPFlow versions (Standard and Optimized). There are two main takeaways from these results. First, the DM\_FIFO optimization allowed achieving line rate for larger programs, due to the reduced number of packet copies needed when compared to the standard version. Second, eBPFlow is potentially capable of much higher rates than the ones observed for the example programs. The results in \S~\ref{secsec:throughput} are affected by TCAM/CAM lookups/writes, which have greater cost than simple \textit{mov} instructions that execute in a single cycle. As future work, we plan to mix such high-cost instructions into the workload to further analyze their impact.
+To understand the impact of program size on the observed performance, we created $26$ synthetic programs consisting of a varying number of \textit{mov} instructions and a final \textit{exit} instruction. Besides the smallest value (4 instructions), we varied program sizes from $10$ to $250$, increasing $10$ instructions at a time. The traffic generated consisted of 1,500-byte packets at 10 Gbps. Figure~\ref{fig:programsize} presents the throughput for each program, considering both eBPFlow versions (Standard and Optimized). There are two main takeaways from these results. First, the DM\_FIFO optimization allowed achieving line rate for larger programs, due to the reduced number of packet copies needed when compared to the standard version. Second, eBPFlow is potentially capable of much higher rates than the ones observed for the example programs. The results in \S~\ref{secsec:throughput} are affected by TCAM/CAM lookups/writes, which have greater cost than simple \textit{mov} instructions that execute in a single cycle. As future work, we plan to mix such high-cost instructions into the workload to further analyze their impact.
 
 %\begin{figure}[H]
 %\centering
@@ -265,21 +269,7 @@ To understand the impact of program size on the observed performance, we created
 \subsection{Power}
 \label{sec:power}
 
-%When idle, the NetFPGA consumes 16 W. When eBPFlow is loaded, the power consumption is 22 W independent of the packet rate or what programming is running. On the other hand, an idle CPU already consumes 85 W. Thus, eBPFlow saves power in comparison to software packet processing.
-
-Table~\ref{tab:powerconsumption} presents the power consumption of some packet processing devices. When idle, the NetFPGA consumes 16 W. When eBPFlow is synthesized, the power consumption is 22 W regardless of the packet rate or what programming is running. 
-%Netronome's SmartNIC consumes between 20 W and 40 W when active. 
-eBPFlow has lowest power consumption per-interface (5.5 W).
-%An idle CPU already consumes 85 W. 
-An x86 server spends 55x more power than eBPFlow.
-Thus, eBPFlow saves power in comparison to other packet processing devices.
-
-%P4 switches (i.e., P4 Wedge 100BF-32X) spent 20 times more energy than eBPFlow. x86 server is the equipment with greater consumption in packet processing.
-
-
-%\textcolor{red}{The Power of SmartNICs reference} \cite{powersmartnics}. 
-
-\begin{table}[h] %tb
+\begin{table}[t] %tb
 \centering
 \caption{Devices power consumption comparison.}
 \label{tab:powerconsumption}
@@ -291,8 +281,22 @@ Netronome's SmartNIC~\cite{NetronomePC} & up to 40 W \\ \hline
 %CPU (idle)  & 85 W \\ \hline
 Intel Core i7-7700~\cite{i7i7700} & 65 W \\ \hline
 P4 Wedge 100BF-32X~\cite{P4wedge} & 436 W \\ \hline
-x86 server~\cite{x86serverPC} & 500 W to 1200 W \\ \hline
+1U x86 server~\cite{x86serverIBM} & 300 W to 350 W \\ \hline
 \end{tabular}
 \end{table}
+
+
+%When idle, the NetFPGA consumes 16 W. When eBPFlow is loaded, the power consumption is 22 W independent of the packet rate or what programming is running. On the other hand, an idle CPU already consumes 85 W. Thus, eBPFlow saves power in comparison to software packet processing.
+
+Table~\ref{tab:powerconsumption} presents the power consumption of some packet processing devices. When idle, the NetFPGA consumes 16~W. When eBPFlow is synthesized, the power consumption is 22~W regardless of the packet rate or what programming is running. 
+%Netronome's SmartNIC consumes between 20 W and 40 W when active. 
+eBPFlow has lowest power consumption per interface (5.5~W) or $0.55$~W/Gbps. Meanwhile, an 1U x86 server~\cite{x86serverIBM} consumes on average $75$~W/interface or $1.875$~W/Gbps.
+Thus, eBPFlow saves power in comparison to other packet processing devices.
+
+%P4 switches (i.e., P4 Wedge 100BF-32X) spent 20 times more energy than eBPFlow. x86 server is the equipment with greater consumption in packet processing.
+
+
+%\textcolor{red}{The Power of SmartNICs reference} \cite{powersmartnics}. 
+
 
 
