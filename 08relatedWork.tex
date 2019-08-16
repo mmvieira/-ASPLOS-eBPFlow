@@ -3,8 +3,12 @@
 
 %\input{08tableRelatedWork}
 
-To the best of our knowledge, eBPFlow is the first packet processing hardware device that is Turing-Complete, enables the programming of stateful and stateless network functions, and can dynamically modify the parser, matching, and actions at zero downtime.
-%and can also self-populate its tables.
+ To the best of our knowledge, eBPFlow is the first network packet processing system for serverless computing using NetFPGAs.
+
+% To the best of our knowledge, eBPFlow is the first packet processing hardware device that is Turing-Complete, enables the programming of stateful and stateless network functions, and can dynamically modify the parser, matching, and actions at zero downtime.
+% %and can also self-populate its tables.
+
+\textbf{Serveless}. E3~\cite{liu2019e3} studies the use of Cavium LiquidIO SmartNICs for microservices to save energy. As shown in Table~\ref{tab:powerconsumption}, SmartNICs consume more energy than eBPFlow.
 
 %OpenFlow standard 
 \textbf{OpenFlow standard}. The OpenFlow~\cite{McKeown:2008:OpenFlow} standard, although being the most adopted SDN architecture, has limitations. Its matching structure is unable to do inequality, complement (not operation), or range matching. 
@@ -52,13 +56,13 @@ PLUG (Pipelined Lookup Grid)~\cite{DeCarli:2009:PFL:1592568.1592593} also propos
 
 
 %- BPFabric, IOVisor
-\textbf{BPF related} BPFabric~\cite{Jouet:2017:BPFabric} was proposed as a platform in software that allows protocol-independent packet processing. 
+\textbf{BPF related.} BPFabric~\cite{Jouet:2017:BPFabric} was proposed as a platform in software that allows protocol-independent packet processing. 
 BPFabric uses eBPF instructions to define how packet processing and forwarding in the data plane are performed.
 BPFabric was, initially, implemented over a Linux raw socket interface and, later, adapted over the DPDK.
-It might be the case that tenants of datacenters would require their rented CPU cores used for processing instead of packet forwarding. Moreover, currently BPFabric does not incorporate longest prefix match, necessary for routing. Finally, BPFabric does not take advantage of specialized  hardware modules such as TCAMs and CAMs.
-As stated by the author~\cite{Jouet2017Thesis}, the high cost of table operations is to be expected in a software switch implementation
-since no optimized memory hardware is available. 
-%Since this is a very relevant topic, while developing this project, Jouet~\cite{Jouet2017Thesis} proposes a single stage eBPF processor with Altera FPGA platform. But, the proposed processor does not have pipeline stages, the project was not ported to NetFPGA platform, or integrated or tested at a network element. 
+% It might be the case that tenants of datacenters would require their rented CPU cores used for processing instead of packet forwarding. Moreover, currently BPFabric does not incorporate longest prefix match, necessary for routing. Finally, BPFabric does not take advantage of specialized  hardware modules such as TCAMs and CAMs.
+% As stated by the author~\cite{Jouet2017Thesis}, the high cost of table operations is to be expected in a software switch implementation
+% since no optimized memory hardware is available. 
+% %Since this is a very relevant topic, while developing this project, Jouet~\cite{Jouet2017Thesis} proposes a single stage eBPF processor with Altera FPGA platform. But, the proposed processor does not have pipeline stages, the project was not ported to NetFPGA platform, or integrated or tested at a network element. 
 There  are  already some emerging eBPF projects inspired by IOVisor~\cite{IOvisor} project.
 InKev~\cite{InKeV2016} enables to execute eBPF programs on the datapath for virtual networks, targeting data center networks.
 Tu et al.~\cite{Tu:2017:BEO:3139645.3139657} describe the design, implementation, and evaluation of an eBPF-based extensible datapath for OVS.
@@ -66,16 +70,17 @@ To enable OpenFlow to parse arbitrary field, Jouet et al. defined an OpenFlow Ex
 Katran~\cite{Katran2018} is an open source eBPF load-balancer application provided by Facebook.
 % P4FPGA, opensketch, OpenFlow NetFPGA
 
-\textbf{FPGA related} P4FPGA~\cite{p4fpga} is a platform developed in hardware that performs conversion of P4 programs to Verilog.
+\textbf{FPGA related.} P4FPGA~\cite{p4fpga} is a platform developed in hardware that performs conversion of P4 programs to Verilog.
 %P4FPGA was instrumented on the FPGA Xilinx Virtex-7 XC7V690T.
 The three main components of the platform are: code generator, runtime system, and the optimizer. The code generator has the capability of producing a packet processing pipeline. The runtime system provides a hardware abstraction layer for basic functionalities including memory management, transceiver management, and control/host communication. The optimizer is used to provide parallelism in the hardware by increasing the throughput and decreasing latency.
 P4-To-VHDL~\cite{BENACEK201822} is a tool that converts a P4 description to a synthesizable VHDL code suitable for the FPGA implementation.
 ClickNP~\cite{ClickNP2016} also focuses on increasing the programmability flexibility.
 It provides a declarative language called ClickNP.
 ClickNP can be compiled into an intermediate hardware description language (HDL) and synthesized on the FPGA.
-Since they used a FPGA instead of NetFPGA, they can use newer FPGA generation but their design is for up to two ports.
-It follows a bump-in-the-wire model where it receives packets from a single input port, and forwards to a single output.
-Moreover, to reprogram it, it requires 1$\sim$2 hours due to HDL synthesis tools.
+% Since they used a FPGA instead of NetFPGA, they can use newer FPGA generation but their design is for up to two ports.
+% It follows a bump-in-the-wire model where it receives packets from a single input port, and forwards to a single output.
+%Moreover, 
+To reprogram it, it requires 1$\sim$2 hours due to HDL synthesis tools.
 AccelNet~\cite{AzureFPGA2018} shows that it is important to
 offload host networking to hardware. It provides a Generic Flow Tables (GFT) abstraction similar to match-action abstraction model.
 %P4FPGA can not modify the parser, matching or actions at run time.
@@ -83,20 +88,20 @@ OpenSketch~\cite{Yu:2013:SDT:2482626.2482631} also utilized NetFPGA for prototyp
 FlowBaze~\cite{FlowBlaze2019} is an FPGA-based SmartNIC that allows stateful packet processing in hardware by programming using Extended Finite State Machines (EFSM). It is not Turing-complete and to change the parser, match fields, or EFSM transition tables, it requires a new synthesis.
 
 % KeyFlow
-\textbf{Arithmetic Switch.} KeyFlow~\cite{Martinello2014KeyFlow}
-%is a system that describes a new approach to switching packets. 
-%The KeyFlow 
- switch commutes packets based on mod operation.
-Packets receive a label based on the Chinese Remainder Theorem.
-KeyFlow is complementary to our system because it could be implemented in our system, which already has the eBPF processor that executes the mod instruction in hardware. 
+% \textbf{Arithmetic Switch.} KeyFlow~\cite{Martinello2014KeyFlow}
+% %is a system that describes a new approach to switching packets. 
+% %The KeyFlow 
+%  switch commutes packets based on mod operation.
+% Packets receive a label based on the Chinese Remainder Theorem.
+% KeyFlow is complementary to our system because it could be implemented in our system, which already has the eBPF processor that executes the mod instruction in hardware. 
 
 %, SoftNIC.
-\textbf{Smart NIC} 
+\textbf{Smart NIC.} 
 SoftNIC~\cite{Han:EECS-2015-155} provides a programmable NIC interface with Click~\cite{Kohler:2000:CMR:354871.354874}. It is a different approach to provide network programmability. It provides new functionalities for host NIC through software.
-Virtual  Filtering  Platform  (VFP)~\cite{VFP2017} presents a match-action like abstration to offload to SmartNIC in Azure datacenters.
+Virtual  Filtering  Platform  (VFP)~\cite{VFP2017} presents a match-action like abstraction to offload to SmartNIC in Azure datacenters.
 Netronome~\cite{Netronome2018} provides a SmartNIC that can be programmed with eBPF instructions. This shows the trend that eBPF is also being adopted by industry. 
-Netronome SmartNIC focuses on the L2-layer, having at most two ports, and does not provide specialized hardware modules for higher layer such as TCAMs.
-Netronome SmartNIC expressiveness can be categorized as eBPF-verifier since it needs to run the verifier and can not have backward jumps. It requires loop unrolling, which increases the number of instructions. For example, it could not fit the ChaCha20 network function. 
+% Netronome SmartNIC focuses on the L2-layer, having at most two ports, and does not provide specialized hardware modules for higher layer such as TCAMs.
+% Netronome SmartNIC expressiveness can be categorized as eBPF-verifier since it needs to run the verifier and can not have backward jumps. It requires loop unrolling, which increases the number of instructions. For example, it could not fit the ChaCha20 network function. 
 
 % NPU, Xpliant, Tofino
 \textbf{Network processing units (NPUs).} NPUs~\cite{Sherwood:2003:PMA:859618.859652,Keslassy:2012:PPG:2428663.2428680} 
@@ -105,7 +110,7 @@ and multi-core software routers~\cite{Dobrescu:2009:REP:1629575.1629578} are wid
 
 % Table~\ref{tab:05related_work} compares some of the related work platforms, describing: work description, year of publication, which high-level language it uses, whether it was implemented in hardware or software, which model was used, and whether a new installation can be done at runtime with zero downtime.
 
-\textbf{WSN.} The idea to use a virtual machine to reprogram the network~\cite{Paek:2010:TAT:1777406.1777413,Levis:2002:MTV:635508.605407}
- is common in Wireless Sensor Networks (WSNs) since the network is physically unreachable.
+% \textbf{WSN.} The idea to use a virtual machine to reprogram the network~\cite{Paek:2010:TAT:1777406.1777413,Levis:2002:MTV:635508.605407}
+%  is common in Wireless Sensor Networks (WSNs) since the network is physically unreachable.
 
 

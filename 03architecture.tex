@@ -13,32 +13,35 @@
 The \system architecture has a logically centralized controller that communicates through a socket with the network elements (\eg routers, switches). 
 Between the controller and the network elements, there is a southbound API that allows the controller to send platform-independent programs.
 
-The controller can install programs in the data plane of the network elements at run time without network interruption (zero downtime).
-The advantage of this approach is that the parser, matching, and actions can be modified at runtime.
+The controller can install programs in the data plane of the network elements at run time without network interruption (zero downtime), and it includes a scheduler to support multi-tenants and to move code in and out of the data plane.
+
+% The advantage of this approach is that the parser, matching, and actions can be modified at runtime.
+
 
 %\subsection{Dataplane}
 
-When designing the data plane, it should consider performance and how generic it is. It must be fast to be able to process the packets, presenting good network performance. Moreover,
-the set of instructions must be generic to allow the implementation of various functionalities.
+% When designing the data plane, it should consider performance and how generic it is. It must be fast to be able to process the packets, presenting good network performance. Moreover,
+% the set of instructions must be generic to allow the implementation of various functionalities.
 
 Our system has a generic packet processor, with no pre-established behavior.
-The behavior of the device is defined by the set of instructions that accesses the packet headers, payload, and does the parser, matching, and actions at runtime.
-The system uses the eBPF packet processor.
+% The behavior of the device is defined by the set of instructions that accesses the packet headers, payload, and does the parser, matching, and actions at runtime.
+eBPFlow contains a virtual engine to support reprogrammability on the fly.
+The virtual engine follows the well-defined Instruction Set Architecture (ISA) of eBPF, which follows a RISC architecture and is already available in the Linux kernel and well-known in the Computer Networking community, providing compatibility with existing network projects.
+
+% The system uses the eBPF packet processor.
 
 \subsection{eBPF}
 
 %cBPF
-Berkeley Packet Filter (BPF)\cite{McCanne:1993:BPF:1267303.1267305}, now referred as classic BPF (cBPF), is a "virtual machine" (called "pseudo-machine" originally) with a well-defined instruction set, which works as a low-level bytecode, conceptually similar to Java Virtual Machine (JVM) bytecode. It is used for packet filtering. Libpcap is an example of a library that uses BPF and is present at tcpdump and wireshark tools.
-
-
+Berkeley Packet Filter (BPF)~\cite{McCanne:1993:BPF:1267303.1267305}, now referred as classic BPF (cBPF), is a ``virtual machine" (called ``pseudo-machine" originally) with a well-defined instruction set, which works as a low-level bytecode, conceptually similar to Java Virtual Machine (JVM) bytecode. It is mainly used for packet filtering by \textit{libpcap}, and is also present in \textit{tcpdump} and \textit{wireshark} tools.
 
 %eBPF
 eBPF (extended BFP) is an improvement of BPF in which the architecture has been expanded from 32 to 64 bits, increased the number of write registers from 2 to 10, and added support for table operations and function calls~\cite{eBPF}.
-Whereas BPF has only forward jumps, eBPF can have backwards and forwards jumps.
+Whereas BPF has only forward jumps, eBPF can have jumps in both directions.
 The Linux kernel, since version 3.18, allows userspace programs to install eBPF programs into the kernel. 
-EBPF allows designing architectures independent of platforms or protocols.
+eBPF allows designing architectures independent of platforms or protocols.
 No prior knowledge of the protocol or packet structure is required. 
-To parse a packet, it is loaded into the eBPF data memory. The execution of the eBPF instructions moves the packet fields into registers and makes the necessary comparisons.
+The parsing starts when the system loads a packet into the eBPF data memory, and the execution of the eBPF instructions moves the packet fields into registers and makes the necessary comparisons.
 
 \begin{comment}
 \begin{figure*}[ht]
@@ -50,11 +53,11 @@ To parse a packet, it is loaded into the eBPF data memory. The execution of the 
 \end{comment}
 
 %expressiveness
-eBPF supports more expressiveness flow rules.
+eBPF supports expressive flow rules.
 %OpenFlow matching structure has some limitations.
-It enables flow rules to be written with inequality, complement (not operation), or range matching. 
+It enables flow rules supporting inequality, complement (\texttt{not} operation), or range matching. 
 For instance, it can do logical operations such as $\geq$ or $<$, which are needed for range expressions. 
-By allowing the negation rule, for example, a match on a flow that is not on destination port 80 (web traffic), it does not need to create rules for the other complement values, reducing the number of flow rules. 
+By allowing the negation rule, packets that are not destined to port 80 (web traffic), for example, can be matched directly without the need to create rules for the other complement values, reducing the number of flow rules. 
 % Moreover, OpenFlow switch can not extract Time-To-Live (TTL) or TCP Sequence Number fields, which are important to detect expiring packets and TCP migration, respectively. 
 % The OpenFlow solution to extract fields that are not part of the OpenFlow standard is to do it at the OpenFlow controller. 
 % On the other hand, an eBPF program containing only 6 instructions for each field can extract them.
@@ -63,26 +66,24 @@ By allowing the negation rule, for example, a match on a flow that is not on des
 
 
 %Table
-In the software implementation of eBPF in the Linux Kernel, it can register a set of functions to handle maps, which is a < key; value > data structure. 
-The most important functions are: create, lookup, update, and delete.
-The eBPF program can invoke these functions executing the eBPF call instruction.
-The types of maps include arrays, hashmaps, hashmaps with Least Recently Used (LRU) replacement policy, and, as of version 4.11, longest-prefix match (LPM) using trie.
+The software implementation of eBPF in the Linux kernel supports a set of functions to handle maps ($< key; value >$ data structure). 
+The most important functions are: \texttt{lookup}, \texttt{update}, and \texttt{delete}.The eBPF program can invoke these functions executing the eBPF call instruction.
+The types of maps include arrays, hashmaps, hashmaps with Least Recently Used (LRU) replacement policy, and%, as of version 4.11,
+longest-prefix match (LPM) using trie.
 These maps allow eBPF programs to keep state between packet arrivals.
-In classic switches, layer 2 switch uses a hashmap lookup map to map the port associated with a MAC address.
-IP routing maps the port associated to the destination IP with the LPM map.
-Maps are important to store states.
+Classic Layer-2 switches use a hashmap to map the port associated to a MAC address.
+LPM maps can be used to easily implement IP routing, mapping the port associated with a subnetwork.
+Thus, maps are important to store states.
 In our hardware implementation, our design choice is to use hardware modules. The maps are content-addressable memory (CAM) for exact-matching, ternary content-addressable memory (TCAM) for LPM, and Dynamic Random Access Memory (DRAM) for arrays.
 
-
-In this work, we propose to use the eBPF instruction set to parse, match, and define actions on the data plane.
 
 \subsection{High-Level Languages}
 
 
-High-level languages can be used to write code to the data plane and compile it into the eBPF instruction set. A subset of C already exists, which excludes some external libraries, system calls, and pointer arithmetic while providing functions for defining and manipulating tables. The LLVM 3.9 compiler has a backend for the eBPF platform, allowing programming in this subset of C and generating executable code in eBPF format.
+High-level languages can be used to write code to the data plane and compile it into the eBPF instruction set. A subset of C already exists, which excludes some external libraries, system calls, and pointer arithmetic while providing functions for defining and manipulating tables. Since version 3.7, the LLVM compiler collection has a backend for the eBPF platform, allowing programming in this subset of C and generating executable code in eBPF format.
 
-It is also possible to generate eBPF instructions through specific domain languages, such as P4~\cite{Bosshart:2014:P4}.
-There are efforts of the open source Iovisor project~\cite{IOvisor} and from VMware~\cite{p4c-xdp2018} that have already implemented a compiler from P4 to eBPF~\cite{P42EBPF2015}.
+It is also possible to generate eBPF instructions through domain-specific languages, such as P4~\cite{Bosshart:2014:P4}.
+There are efforts of the open source IOVisor project~\cite{IOvisor} and from VMware~\cite{p4c-xdp2018} that have already implemented a compiler from P4 to eBPF~\cite{P42EBPF2015}.
 Thus, by choosing the eBPF instruction set, \system can also leverage previous C and P4 projects and applications.
 
 % \begin{figure}[htb]
@@ -112,13 +113,17 @@ Thus, by choosing the eBPF instruction set, \system can also leverage previous C
 
 %verifier
 %There exits a verifier for programs with eBPF instructions.
-The Linux kernel implementation provides an implementation of an eBPF verifier.
-The verifier lets check the validity, security, and performance of eBPF programs.
-If desired, the verifier allows eBPF programs with only bound-loops to enable static analysis.
+The Linux kernel implementation provides an eBPF verifier.
+The verifier checks the validity, security, and performance of eBPF programs.
+If desired, the verifier allows eBPF programs with only bounded-loops to enable static analysis.
 The eBPF verifier checks whether a program terminates, whether the memory accesses are in the range of memory space, and the greatest depth of the execution path (critical-path).
 This critical-path can provide an upper-bound on the execution time.
-The verifier enables to provide eBPF kernel-safe code execution.
+The verifier aims to guarantee eBPF kernel-safe code execution.
 In eBPFlow, the verifier can be used after the code has been compiled and before loading it into the data plane for static analysis.
+
+The eBPF ISA is Turing complete but eBPF with Linux's verifier is not, because the verifier does not allow backward jumps.
+In eBPFlow, we disable the backward jump in the verifier, thus, allowing our design to be Turing complete. We leave to the programmer the responsibility to check for infinite loops. The network manager writes a program in C or P4 language, and then compiles to eBPF. The eBPF program might be checked before installation with the eBPF verifier. The eBPF program is then installed on the device through a loading agent.
+
 
 % \begin{figure}[htb]
 % \centering
@@ -148,7 +153,7 @@ In eBPFlow, the verifier can be used after the code has been compiled and before
 
 
 %After presenting this example, we can better contextualize the general idea presented in  Figure~\ref{fig:03architecture}. In this scenario, 
-The network manager writes a program in C or P4 language, and then compiles to eBPF. The eBPF program might be checked before installation with the eBPF verifier. The eBPF program is then installed on the device through the controller.
+
 
 %O roteador executa essas instruções para cada pacote recebido, permitindo um plano de dados com análise, casamento e ações dinâmicas.
 
@@ -174,36 +179,28 @@ The network manager writes a program in C or P4 language, and then compiles to e
 \subsection{Southbound API}
 \label{sec:southboundAPI}
 
-\begin{table}[tb]
-\centering
-\caption{Messages exchange between the controller and the network element.}
-\label{tab:06_mes}
-\resizebox{\linewidth}{!}{%
+\begin{table}[]
+\caption{Messages exchanged between the controller and the network element.}
 \begin{tabular}{|c|c|}
 \hline
-\textbf{Type of message} &  \textbf{Description}                                    \\ \hline
-Hi                        &  Establish communication \\
-%                          &  communication                                                                                                   \\ \hline
-\hline
-Install                  &  Install  eBPF\\
-                         &  instruction on the device                                                                                       \\ \hline
-%Notificação               & roteador $\rightarrow$  controlador                 & \begin{tabular}[c]{@{}c@{}}Roteador envia os dados lidos dos \\ registradores do hardware \\ para controlador\end{tabular} \\ \hline
-\begin{tabular}[c]{@{}c@{}}Table \\ command\end{tabular}  & \begin{tabular}[c]{@{}c@{}}Controller send command\\ (update, delete, lookup, list) to device\end{tabular}               
-\\ \hline
-Packet In/Out                  &  Sends a packet to/from\\
-                               & device from/to the controller                                                                                       
-\\ \hline
-
-\end{tabular}}
+\textbf{Type of message} & \textbf{Description}                                                                        \\ \hline
+Hi                       & Establish communication                                                                     \\ \hline
+Allocate                 & \begin{tabular}[c]{@{}c@{}}Allocate eBPF program for certain \\ period of time\end{tabular} \\ \hline
+\end{tabular}
+\label{tbl:messages}
 \end{table}
+The controller and device communicate via socket through an agent running close to the device. After establishing the communication, both controller and agent can exchange messages with specific information. Table~\ref{tbl:messages} displays the supported messages between the controller and the network element.
 
-The controller and device communicate via socket. After establishing the communication, both controller and network element can exchange messages with specific information. Table~\ref{tab:06_mes} displays the supported messages between the controller and the network element.
+Once the communication is established, the first message exchanged is the "Hi" message. 
+It is sent to verify that the controller is connected to the network element and to obtain its identification number. 
+The "Allocate" message contains the eBPF instructions that will be installed in the instruction memory of the eBPF processor and run for the duration specified on the message. The agent interacts with a local scheduler that is responsible for enforcing the requested duration and loading other allocation requests following a First Come First Serve (FCFS) policy and the duration for each request.
 
-The first message sent after the communication is established is the "Hi" message. 
-This message is sent to verify that the controller is connected to the network element and to obtain its datapath identification number. 
-The message "Install" contains the eBPF instructions that will be installed in the instruction memory of the eBPF processor. 
-The message "Table" contains commands for the tables in the device. It can update, delete, lookup, or list the content of the table. This is similar to OpenFlow when installing or removing a rule.
-Packet\_in and Packet\_out messages are similar to OpenFlow. The device can ask the controller to make the decision about the packet and the controller can return a modified packet.
-% "Notify" and "list tables" messages are used to capture information processed in the hardware, for example, the number of packets trafficked.
+%\subsection{\red{Challenges}}
 
+%\red{We present some challenges on implementation eBPFlow's design about NetFPGA.}  
 
+%\begin{itemize}
+%     %\item Double buffer system: ;  % not a challenge, it's a solution
+%     %\item Packet zero copy: ;   % not a challenge, it's a solution
+%     \item Restrictions of time: ;  
+%\end{itemize}

@@ -12,8 +12,8 @@ The user space tools are composed of a controller responsible for defining how t
 FPGA (Field Programmable Gate Array) enables to build hardware logic system.
 %In this work, eBPFlow was implemented in NetFPGA SUME platform. 
 The NetFPGA SUME hardware has four SFP+ transceivers that support 10 Gbps Ethernet ports.
-It connects to a motherboard through an PCIe Gen 3 x8 adapter.
-It contains a Xilinx Vertex-7 690T FPGA~\cite{Virtex7},
+It connects to a motherboard through an PCIe Gen. 3 x8 adapter.
+It contains a Xilinx Virtex-7 690T FPGA~\cite{Virtex7},
 which has approximately 693,120 logic cells, a 27 MiB SRAM and 5 ns (200 MHz) clock cycle.
 %\marcos{XXXX logic cells, a 4 KiB SRAM with $2^{19}$ lines and 8 ns (125 MHz)} clock cycle.
 
@@ -41,7 +41,7 @@ The standard NetFPGA library provides the following modules: input arbiter, outp
 \end{tabular}
 \end{table}
 
-After synthesis, eBPFlow consumed 11.76 \% of logical slice and 8.18 \% of the register slice on NetFPGA SUME. The maximum frequency is 185.83 MHz (cycle of (5.405 ns).
+After synthesis, eBPFlow consumed 11.76\% of logical slice and 8.18\% of the register slice on NetFPGA SUME. The maximum frequency is 185.83 MHz (cycle of 5.405 ns).
 
 \subsection{Finite State Machine of HW Controller}
 
@@ -51,7 +51,7 @@ The finite state machine (FSM) in the module output port lookup controls the who
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=.9\textwidth]{figures/06_fig02.png}
+\includegraphics[width=.9\textwidth]{figures/06_fig02.pdf}
 \caption{Control and Datapath of the eBPF processor.}
 \label{fig:06_fig02}
 \end{figure*}
@@ -60,7 +60,7 @@ The finite state machine (FSM) in the module output port lookup controls the who
 The eBPF processor is responsible for performing the parse, matching, and actions according to the user-created user-generated C-code or P4-generated eBPF instructions. When starting the operation of the device, the user must load the eBPF instructions into the instruction memory to define  the behavior of the data plane.
 % After the instructions have been loaded the switch starts processing the packets.
 
-Figure~\ref{fig:06_fig02} presents the data and control path in register transfer level (RTL), containing five data functional units (program counter, instruction memory, register file, arithmetic logic unit (ALU), data memory) and three control units (hazard detection, forwarding, and control).
+Figure~\ref{fig:06_fig02} presents the data and control path in register transfer level (RTL), containing five data functional units (program counter, instruction memory, register file, arithmetic logic unit (ALU), and data memory) and three control units (hazard detection, forwarding, and control).
 
 After the instruction is fetched from the memory instruction, it is divided into five parts: operation code, destination and source register address, offset, and immediate value. Each part of the instruction is sent to a specific unit. The control unit receives the operation code and forwards the control signals to the functional units, defining the behavior of each unit. For example, instructions in the ALU (arithmetic and logical unit) class do not use the data memory, so the read and write signals from the data memory are not activated.
 
@@ -73,7 +73,7 @@ The eBPF opcode is divided into seven classes: immediate load, load, immediate s
 \begin{tabular}{|c|l|}
 \hline
 \textbf{Register} & \textbf{Description} \\
-\hline \hline
+\hline
 R0 & return value from function, and exit value\\
 \hline
 R1 - R5 & arguments from eBPF program to function\\
@@ -86,7 +86,7 @@ R10 & read-only frame pointer to access stack\\
 \end{table}
 
 Read and write data operations in the registers are performed in the register file. 
-In the read operation, the register file receives the addresses of the destination\/origin register and forwards the data referring to the ALU addresses. The write operation in the register file is performed after reading the data in the data memory or an ALU operation.
+In the read operation, the register file receives the addresses of the destination or source register and forwards the data referring to the ALU addresses. The write operation in the register file is performed after reading the data in the data memory or an ALU operation.
 Table~\ref{tab:eBPFreg} describes the functionality of each eBPF register.
 
 % Therefore, eBPF calling convention is defined as:
@@ -103,25 +103,43 @@ The data memory has the functionality of storing metadata and packet words for t
 %We currently define the data memory with this capacity because of the little logical resource (53,000 logical cells) available in the NetFPGA SUME. 
 The write operation is synchronous (only happens at clock edge) and the read operation is asynchronous.
 
-The eBPF processor has a set of read and write instructions in the data memory with the following size types: 8 bits (byte (B)), 16 bits (half-word (H)), 32 bits (\ textit {word} (w)), and 64 bits (double word (DW)). In order to be able to read and write data of these size types, 
-we add decoders and a control signal from the control unit to the decoders. The decoders perform the data mapping according to the control signal.
+The eBPF processor has a set of read and write instructions in the data memory with the following size types: 8 bits (byte (B)), 16 bits (half-word (H)), 32 bits (word (w)), and 64 bits (double word (DW)). In order to be able to read and write data of these size types, 
+we added decoders and a control signal from the control unit to the decoders. The decoders perform the data mapping according to the control signal.
 We also have to use the generate-for construct available by Xilinx tool. 
 This construct does a loop unrolling before synthesizing the code and enables creating variable data size memory.
 
 %We initially projected the eBPF processor for single-cycled datapath. Later, we extend it to a 5-stage pipeline:
-We design the eBPF processor with a 5-stage pipeline: instruction fetch (IF), instruction decode (ID), execute (EXE), memory (MEM), and write back (WB).
+We designed the eBPF processor with a 5-stage pipeline: instruction fetch (IF), instruction decode (ID), execute (EXE), memory (MEM), and write back (WB).
 IF stage gets instruction from memory and increments program counter (PC).
 ID stage translates opcode into control signals and reads registers from the register file. EXE stage performs ALU operation, and computes jump/branch targets. MEM stage accesses data memory if needed. WB stage updates register file. 
 This design follows the MIPS load-store pipeline architecture~\cite{Hennessy:2011:CAF:1999263}.
-We add four pipelined registers (between the stages), the forwarding unit, and hazard unit. 
+We added four pipeline registers (between the stages), the forwarding unit, and hazard unit. 
 
 The forwarding unit is designed to solve the data hazards at ALU in a pipelined processor. The correct data at the output of the ALU is forwarded to the input of the ALU when data hazards are detected. These hazards are detected when the source register of the current instruction is the same as the destination register of the previous instruction.
 
 The hazard detection unit is projected to solve data and control hazards. When data hazards occur, it needs to delay 1 cycle before forwarding.
 Data hazard stalls 1 cycle when the destination register of the current instruction is the same as the source register of the coming instruction in ID stage. The control hazard happens when there is a jump/branch. In this case, the hazard detection unit discards instructions in IF and ID stages.
 These units are implemented with logic gates to minimize latency.
-Thus, we design an eBPF processor with a pipeline of 5 stages.
+Thus, we designed an eBPF processor with a pipeline of 5 stages.
 
+\subsection{Data memory (Optimized FIFO for Zero Copy)}
+
+%\red{The eBPF processor uses the queue (Figure~\ref{fig:06_fig01}) as data memory and does not need to copy the packet to another memory. The processor does not have to wait for all words of the packet to be queued before processing begins. The queue has capacity of 2 MB (64 depth x 256 width) and can be stored up 32 packets of 64 bytes. In the queue there is a field called valid bit that receives $0$ if the word has not arrived and $ 1$ if the word is in the queue.
+
+%When load/store instructions are executed at the EX/MEM processor stage, it is checked if the requested line address has valid bit active (value 1). If the valid bit value is 0, the processor pipeline is blocked until the word is stored in the queue. When the word is stored the valid bit field is updated to 1 and the read or write operation of the requested address is performed, freeing the execution of the pipeline and continuing the execution of the following instructions.
+
+%After all instructions were executed the packet is forwarded, and the valid bit field is updated to 0 by disabling the queue line of the packet.}
+
+To avoid the overhead of copying the packet from the transfer FIFO to the processor data memory, we designed a new abstract data type (ADT), called Data Memory FIFO (DM\_FIFO), that works as a FIFO but also as a Data Memory. This enables the eBPF processor to access the packet's data with zero-copy and run load and store operations with high efficiency. It is synchronized with the NetFPGA datapath's modules (input arbiter and output queues). It has a capacity of 2 MB (64 depth x 256 width) and can store up to 32 packets of 64 bytes. 
+
+The eBPF engine can start processing the packet even if the packet did not fully arrive yet.
+Inside DM\_FIFO, for each word, we added a valid bit to indicate if the word contains data from the new incoming packet. 
+If the word is invalid (piece of packet did not arrive yet), DM\_FIFO informs that to the processor and the processor goes to idle stage and waits the word be stored (piece of the packet to arrive).
+%DM\_FIFO's FSM is thrown when load and store instructions are executed at the processor's pipeline EX/MEM stage.
+
+Thus, DM\_FIFO brings two advantages: it does zero copy; and it allows the eBPF engine to start processing the packet before having to wait for the entire packet to arrive. 
+We refer to this \textbf{optimization} as eBPFlow optimized version.
+Section~\ref{sec:results} evaluates this optimization.
 
 \subsection{Instruction Memory} 
 
@@ -133,9 +151,11 @@ The eBPF instructions define the behavior of how the eBPF processor handles the 
 
 \textcolor{black}{Instruction memory uses a double buffer system - DBS (Figure~\ref{fig:mem_db}) to provide zero downtime in the change of eBPF programs. This system is composed of two memories (M$_{1}$ and M$_{2}$). Both memories never assume the same state (writing or reading) at the same time. It means that while eBPF program is written to a memory, the eBPF processor reads the instructions of the other memory. DBS is initialized with eBPF instructions written on M$_{1}$, while M$_{2}$ remains idle. The system remains in the wait state until a new set of instructions will be received. After the instructions are written to M$_{1}$, the system will return to the standby state. When a new set of instructions is received, the memories change their states, which means that M$_{1}$ will no longer be written and will be read while M$_{2}$ will be written. If a new instruction set is received, these instructions are written in M$_{2}$, while the instructions previously written in M$_{1}$ are read and processed by the eBPF processor. This process can be repeated indefinitely.} 
 
+The advantage of DBS is it enables faster switching time. The disadvantage is it consumes more memory but, as shown in Table~\ref{tab:eBPFresource}, memory was not a bottleneck resource.
+
 \begin{figure}[tb]
 \centering
-\includegraphics[width=\linewidth]{figures/memory_db.png}
+\includegraphics[width=\linewidth]{figures/memory_db.pdf}
 \caption{Instruction memory - Double Buffer System.}
 \label{fig:mem_db}
 \end{figure}
@@ -171,15 +191,15 @@ To manipulate these tables, the user can write C program and invoke the three fu
 
 \begin{figure}[tb]
 \centering
-\includegraphics[width=1.\linewidth]{figures/coprocessor.png}
-\caption{Coprocessor and Maps table.}
+\includegraphics[width=1.\linewidth]{figures/coprocessor.pdf}
+\caption{coprocessor and Maps table.}
 \label{fig:coproc}
 \end{figure}
 
 \textcolor{black}{
 Since maps are generic data structures, allowing keys and values of multiple byte lengths, the coprocessor needs to know the actual size of the data being read/written to map memory. This information is stored in a \textit{maps table}, shown in Figure \ref{fig:coproc}, which holds metadata about each map declared in the current loaded program. This includes map type, key, value masks, and the maximum number of elements allowed in the map. 
 %Our current implementation allows for maximum key and value sizes of 6 and 4 bytes, respectively.
-The values are passed to the coprocessor by copy through registers R1-R4 on map calls. A lookup on the maps table is performed on every map operation to retrieve key and value masks, which are used in a bitwise-AND operation with the data to clean any unwanted bits. The map's type is also used by the coprocessor to switch to the proper memory unit (CAM or TCAM).
+The values are passed to the coprocessor by copy through registers R1-R4 on map calls. A lookup on the maps table is performed on every map operation to retrieve key and value masks, which are used in a bitwise AND operation with the data to clean any unwanted bits. The map's type is also used by the coprocessor to switch to the proper memory unit (CAM or TCAM).
 }
 
 \subsection{Call instruction}
@@ -205,9 +225,6 @@ Register R4 has the TCAM mask item.
 Function return parameter is through register R0.
 Since the call instruction requires register values, it can also suffers from hazard in the pipeline. The hazard unit has to stall to solve this issue.
 Thus, for optimization, current call instruction is done through synchronous communication with coprocessor hardware modules since their functions are implemented in hardware.
-
-
-
 
 \subsection{Synchronization}
 
@@ -258,9 +275,21 @@ Loading code to the processor is done through the use of a \textit{loader}, spec
 
 At the beginning of every eBPF program, registers R1 and R10 need to be initialized with pointers to the packet, and to the top of the stack, respectively. Since these are specific to the runtime environment (here, the processor), such initialization is not part of the code generated by \textit{clang} compiler. Thus, when loading a program, the loader appends two instructions at the beginning of the instruction memory to correctly initialize those two registers with the proper addresses. 
 
-To handle maps, the compiler adds map information to the eBPF ELF file as a relocation section, which needs to be processed before code execution. This job is also done by the \textit{loader}, which adjusts all map \textit{call} instructions with their corresponding map values according to the relocation table in the ELF file.
+To handle maps, the compiler adds map information to the eBPF ELF file as a relocation section, which needs to be processed before code execution. This job is also done by the loader, which adjusts all map \textit{call} instructions with their corresponding map values according to the relocation table in the ELF file.
 
-Finally, the \textit{loader} interacts with the processor register interface to load the list of instructions to the instruction memory and metadata about every map in the program to the maps table (\textsection \ref{ssec:maps}), after which the processor is ready to execute any incoming packets based on the loaded eBPF program. Through the register interface, the loader is also able to query status information about the processor, such as the value of R0, which instruction memory is being currently used and if the last load was successful or not.
+Finally, the loader interacts with the processor register interface to load the list of instructions to the instruction memory and metadata about every map in the program to the maps table (\textsection \ref{ssec:maps}), after which the processor is ready to execute any incoming packets based on the loaded eBPF program. Through the register interface, the loader is also able to query status information about the processor, such as the value of R0, which instruction memory is being currently used and if the last load was successful or not.
+
+\color{black}
+\subsection{Agent and scheduler}
+
+We implemented a job scheduler in software capable of receiving allocation requests remotely and scheduling function execution on eBPFlow. It was split into two main logical parts, which run as separate threads: the scheduler itself and the agent. The agent is responsible for receiving requests from an out-of-band TCP connection and passing them to the scheduler thread to be enqueued for processing. 
+
+The requests are generated by a simple network controller implemented as a Python script. The communication API was implemented using Google's protobuf library. Allocation requests are composed of two fields: the eBPF program representing the function to be run and the desired allocation duration.
+
+Once a request is received by the agent, its contents are parsed and a new job is added to the end of the scheduler's jobs queue. This queue was implemented as a circular buffer, where the agent acts as a producer and the scheduler thread acts as a consumer.
+
+While the job queue is not empty, the scheduler thread loads the first job on the queue using the program loader (\S~\ref{ssec:loader}) and sets a timer with the request duration. Once the timer expires, the scheduler starts serving the next job and the whole process is repeated indefinitely. When the queue is empty, the scheduler just waits for new allocation requests.
+\color{black}
 
 
 

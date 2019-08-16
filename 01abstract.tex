@@ -1,12 +1,43 @@
 \begin{abstract}
-%The OpenFlow standard is the most used solution in SDN, separating the data plane from the control plane and using a limited set of fields and actions. However, OpenFlow does not allow to include new fields outside the specification, making it difficult to adopt new protocols and services.
-Providing an expressive (Turing-Complete) abstraction for network function packet processing in hardware remains a research challenge.
-In this work, we propose eBPFlow, a model for Turing-Complete, hardware-based packet processing. It enables the programming of stateful and stateless network functions and the use of dynamically defined new fields and protocols, without the need to recompile or restart the hardware platform when the user changes, at run time, how the flows should be processed.
-eBPFlows run an eBPF (extended Berkeley Packet Filter) processor that enables the processing of protocol-independent network flows using eBPF instructions generated from programs written by the user in a high-level language.
-Our prototype was implemented on the NetFPGA SUME 40 Gb/s platform.
-We show the feasibility of building network functions, such as a learning switch, an IPv4 router and a cryptographic primitive.
-Our results show that the system allows modifying parsing, matching, and actions at run time with zero downtime.
-We plan to make the eBPFlow implementation publicly available.
+% %The OpenFlow standard is the most used solution in SDN, separating the data plane from the control plane and using a limited set of fields and actions. However, OpenFlow does not allow to include new fields outside the specification, making it difficult to adopt new protocols and services.
+% Providing an expressive (Turing-Complete) abstraction for network function packet processing in hardware remains a research challenge.
+% In this work, we propose eBPFlow, a system for Turing-Complete, hardware-based packet processing. It enables the programming of stateful and stateless network functions and the use of dynamically defined new fields and protocols, without the need to recompile or restart the hardware platform when the user changes, at run time, how the flows should be processed.
+% eBPFlows run an eBPF (extended Berkeley Packet Filter) processor that enables the processing of protocol-independent network flows using eBPF instructions generated from programs written by the user in a high-level language.
+% Our prototype was implemented on the NetFPGA SUME 40 Gb/s platform.
+% We show the feasibility of building network functions, such as a learning switch, an IPv4 router and a cryptographic primitive.
+% Our results show that the system allows modifying parsing, matching, and actions at run time with zero downtime.
+% We plan to make the eBPFlow implementation publicly available.
+
+%Providing a serveless but expressive (Turing-Complete) and stateful abstraction for network processing code in hardware remains a research challenge.
+In this work, we present eBPFlow, a serverless network packet processing system.
+%that handles state operations and allows modifying parsing, matching, and actions at run-time with zero downtime.
+In building eBPFlow, we identified and solved seven main issues.
+To be able to support reprogrammability on the fly, eBPFlow contains a virtual engine.
+To be Turing-Complete, we borrow the well-defined Instruction Set Architecture of eBPF, which follows a RISC architecture and is already available in the Linux kernel and well-known in the Computer Networking community, providing compatibility with existing network projects.
+To improve performance, we are the first to present a 5-stage pipeline eBPF processor.
+To be able to operate with zero downtime, eBPFlow utilizes a double buffer system.
+To operate with zero copy, we design an abstract data type DM\_FIFO that is simultaneously a Data Memory and FIFO. 
+%This idea could be adopted for other network system such as BESS, P4 and OpenFlow switches.
+To handle state operations in the data plane with an expressive but yet simple model, eBPFlow utilizes key-store data storage called maps that are decoupled from the data memory and can be accessed through function calls in a well-defined API.
+%Should we use these two next sentences?
+%Some of these solutions might have been used separately in the past.
+% To be able to achieve line rate, our design separates the memory instruction from the eBPF processors so that each input port has its own processor but they all execute the same code.
+To support multi-tenants, we developed a scheduler to the backend to move code in and out of the NetFPGA.
+%The novelty is our design is that we provide a hardware architecture that is energy-efficient, can handle state, is protocol-independent, allows modifying parsing, matching and actions at run-time and provides zero downtime reconfiguration.
+Moreover, with its protocol-independent packet processor, eBPFlow enables incorporating protocols that do not yet exist.
+We implemented our prototype on the NetFPGA SUME 40 Gb/s platform.
+In our system, arbitrary network service processing code can be offloaded to the NetFPGA.
+%We show the feasibility of building network functions, such as learning switch, IPv4 router, and cryptographic primitives.
+Our results show that eBFlow can operate at line rate and consumes 75\% less energy than an idle CPU.
+%We plan to make the eBPFlow implementation publicly available.
+
+% extra:
+% - energy-efficient
+% - Microsoft has datacenter with FPGA that could benefit from our design.
+
+% If added 2 engines:
+% - Memory instruction is separated from processor.
+% - handle concurrence
 \end{abstract}
 
 %As an initial instance, we measure the throughput for different packet sizes in a real-world environment. 
